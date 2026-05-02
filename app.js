@@ -5,13 +5,11 @@ function createStore() {
 
   const today = () => new Date().toISOString().split('T')[0];
 
-  // ---- localStorage helpers ----
-  const isLoading = ref(true); 
+  const isLoading = ref(true);
 
-  const _auth = loadStorage().auth || {};
-  const isAuthenticated = ref(_auth.isAuthenticated || false);
-  const userRole = ref(_auth.userRole || null);
-  const userName = ref(_auth.userName || '');
+  const isAuthenticated = ref(false);
+  const userRole = ref(null);
+  const userName = ref('');
   const isAdmin = computed(() => userRole.value === 'admin');
   const settings = reactive({ libraryName: 'Perpus TK-Qu', finePerDay: 1000, defaultLoanDays: 14 });
   const toast = reactive({ show: false, message: '', type: 'success' });
@@ -51,16 +49,6 @@ function createStore() {
   function logout() { isAuthenticated.value = false; userRole.value = null; userName.value = ''; }
 
   // ---- Books ----
-  const _defaultBooks = [
-    { id: 1, title: 'Clean Code', author: 'Robert C. Martin', publisher: 'Prentice Hall', category: 'Technology', stock: 3, totalStock: 3, barcode: 'BC001' },
-    { id: 2, title: 'The Pragmatic Programmer', author: 'David Thomas', publisher: 'Addison-Wesley', category: 'Technology', stock: 2, totalStock: 2, barcode: 'BC002' },
-    { id: 3, title: '1984', author: 'George Orwell', publisher: 'Secker & Warburg', category: 'Fiction', stock: 0, totalStock: 4, barcode: 'BC003' },
-    { id: 4, title: 'Atomic Habits', author: 'James Clear', publisher: 'Avery', category: 'Self-Help', stock: 1, totalStock: 3, barcode: 'BC004' },
-    { id: 5, title: 'Sapiens', author: 'Yuval Noah Harari', publisher: 'Harper Collins', category: 'History', stock: 2, totalStock: 2, barcode: 'BC005' },
-    { id: 6, title: 'The Alchemist', author: 'Paulo Coelho', publisher: 'HarperOne', category: 'Fiction', stock: 3, totalStock: 5, barcode: 'BC006' },
-    { id: 7, title: 'Dune', author: 'Frank Herbert', publisher: 'Chilton Books', category: 'Sci-Fi', stock: 1, totalStock: 2, barcode: 'BC007' },
-    { id: 8, title: 'Think and Grow Rich', author: 'Napoleon Hill', publisher: 'The Ralston Society', category: 'Self-Help', stock: 2, totalStock: 2, barcode: 'BC008' },
-  ];
   const books = ref([]);
   async function addBook(b) {
     if(!requireAdmin()) return false;
@@ -98,13 +86,6 @@ function createStore() {
   function findBookByBarcode(bc) { return books.value.find(b=>b.barcode.toLowerCase()===bc.toLowerCase()) || null; }
 
   // ---- Members ----
-  const _defaultMembers = [
-    { id: 1, name: 'Andi Prasetyo', role: 'Murid', memberCode: 'MB001' },
-    { id: 2, name: 'Budi Santoso',  role: 'Murid', memberCode: 'MB002' },
-    { id: 3, name: 'Citra Dewi',    role: 'Guru',  memberCode: 'MB003' },
-    { id: 4, name: 'Dian Kusuma',   role: 'Murid', memberCode: 'MB004' },
-    { id: 5, name: 'Eko Widodo',    role: 'Guru',  memberCode: 'MB005' },
-  ];
   const members = ref([]);
   async function addMember(m) {
     if(!requireAdmin()) return false;
@@ -145,15 +126,6 @@ function createStore() {
     return { ...b, memberName: member?.name||'Unknown', bookTitle: book?.title||'Unknown', daysOverdue, fine: calcFine(b.dueDate, fineAsOf), status: statusCalc };
   }
 
-  const _defaultBorrowings = [
-    { id: 1, memberId: 1, bookId: 3, borrowDate:'2025-03-01', dueDate:'2025-03-15', returnDate:null, status:'active' },
-    { id: 2, memberId: 2, bookId: 1, borrowDate:'2025-02-20', dueDate:'2025-03-05', returnDate:null, status:'active' },
-    { id: 3, memberId: 3, bookId: 4, borrowDate:'2025-02-10', dueDate:'2025-02-24', returnDate:'2025-02-23', status:'dikembalikan' },
-    { id: 4, memberId: 4, bookId: 2, borrowDate:'2025-01-15', dueDate:'2025-01-29', returnDate:'2025-02-01', status:'dikembalikan' },
-    { id: 5, memberId: 5, bookId: 5, borrowDate:'2025-03-05', dueDate:'2025-03-19', returnDate:null, status:'active' },
-    { id: 6, memberId: 1, bookId: 7, borrowDate:'2024-12-01', dueDate:'2024-12-15', returnDate:'2024-12-14', status:'dikembalikan' },
-    { id: 7, memberId: 2, bookId: 6, borrowDate:'2024-11-10', dueDate:'2024-11-24', returnDate:'2024-11-25', status:'dikembalikan' },
-  ];
   const borrowings = ref([]);
 
   async function borrow(memberId, bookId, dueDate) {
@@ -209,7 +181,7 @@ function createStore() {
     return months;
   }
 
-  // ---- Auto-save ke localStorage ----
+  // ---- Auto-load dari Supabase ----
     async function loadAll() {
       isLoading.value = true;
       try {
@@ -362,22 +334,19 @@ const BooksView = {
     function saveBook() {
       if(!props.store.isAdmin.value) { props.store.showToast('Hanya admin yang boleh menyimpan buku.', 'error'); return; }
       if(!bookForm.title || !bookForm.author || !bookForm.barcode) { props.store.showToast('Isi dulu kolomnya','error'); return; }
-      if(editingBook.value) props.store.updateBook(editingBook.value.id, { ...bookForm });
-      else props.store.addBook({ ...bookForm });
-      showBookForm.value = false;
       if(editingBook.value) {
-      const activeBorrows = store.borrowings.value.filter(
-        b => b.bookId === editingBook.value.id && b.status !== 'returned'
-      ).length;
-
-      if(bookForm.stock < 0 || bookForm.totalStock < activeBorrows) {
-        store.showToast(
-          `Total stok tidak boleh kurang dari jumlah yang sedang dipinjam (${activeBorrows} eksemplar).`,
-          'error'
-        );
-        return;
+        const activeBorrows = props.store.borrowings.value.filter(
+          b => b.bookId === editingBook.value.id && b.status !== 'dikembalikan'
+        ).length;
+        if(bookForm.stock < activeBorrows) {
+          props.store.showToast(`Stok tidak boleh kurang dari jumlah yang sedang dipinjam (${activeBorrows} eksemplar).`, 'error');
+          return;
+        }
+        props.store.updateBook(editingBook.value.id, { ...bookForm });
+      } else {
+        props.store.addBook({ ...bookForm });
       }
-    }
+      showBookForm.value = false;
     }
     function deleteBook(id) { if(!props.store.isAdmin.value) { props.store.showToast('Hanya admin yang boleh menghapus buku.', 'error'); return; } if(confirm('Delete this book?')) props.store.deleteBook(id); }
 
@@ -425,13 +394,13 @@ const MembersView = {
     const paginatedMembers = computed(() => filteredMembers.value.slice((memberPage.value - 1) * memberPerPage, memberPage.value * memberPerPage));
 
     function getMemberBorrowings(id, statusFilter=null) {
-      return props.store.enrichedBorrowings.value.filter(b=>b.memberId===id && (statusFilter?b.status===statusFilter:b.status!=='Dikembalikan'));
+      return props.store.enrichedBorrowings.value.filter(b=>b.memberId===id && (statusFilter?b.status===statusFilter:b.status!=='dikembalikan'));
     }
     const getMemberBorrowCount   = id => getMemberBorrowings(id).length;
-    const getMemberHistoryCount  = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='Dikembalikan').length;
-    const getMemberOverdueCount  = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='Terlambat').length;
-    const getMemberActiveBorrowings   = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status!=='Dikembalikan');
-    const getMemberReturnedBorrowings = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='Dikembalikan');
+    const getMemberHistoryCount  = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='dikembalikan').length;
+    const getMemberOverdueCount  = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='terlambat').length;
+    const getMemberActiveBorrowings   = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status!=='dikembalikan');
+    const getMemberReturnedBorrowings = id => props.store.enrichedBorrowings.value.filter(b=>b.memberId===id&&b.status==='dikembalikan');
 
     function openMemberForm(m=null) {
       if(!props.store.isAdmin.value) { props.store.showToast('Hanya admin yang boleh mengubah member.', 'error'); return; }
@@ -618,10 +587,10 @@ const HistoryView = {
     const summaryStats = computed(() => {
       const all = filteredHistory.value;
       return [
-        { label:'Total',  value: all.length,                             color:'text-surface-900' },
-        { label:'Dikembalikan',       value: all.filter(b=>b.status==='returned').length, color:'text-accent-emerald' },
-        { label:'Peminjaman',   value: all.filter(b=>b.status==='active').length,   color:'text-brand-400' },
-        { label:'Terlambat',        value: all.filter(b=>b.status==='overdue').length,   color:'text-accent-rose' },
+        { label:'Total',        value: all.length,                                      color:'text-surface-900' },
+        { label:'Dikembalikan', value: all.filter(b=>b.status==='dikembalikan').length, color:'text-accent-emerald' },
+        { label:'Peminjaman',   value: all.filter(b=>b.status==='active').length,       color:'text-brand-400' },
+        { label:'Terlambat',    value: all.filter(b=>b.status==='terlambat').length,    color:'text-accent-rose' },
       ];
     });
 
@@ -768,11 +737,6 @@ createApp({
     async function loginAsViewer() {
       store.loginAsViewer();
       await store.loadAll();
-      currentView.value = 'books';
-    }
-
-    function loginAsViewer() {
-      store.loginAsViewer();
       currentView.value = 'books';
     }
 
