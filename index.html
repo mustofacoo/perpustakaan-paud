@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Perpus TK-Qu</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Vue 3 CDN -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['Syne', 'sans-serif'],
+        body: ['DM Sans', 'sans-serif'],
+      },
+      colors: {
+        brand: {
+          50:  '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+        },
+        surface: {
+          50:  '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+          950: '#080e1a',
+        },
+        accent: {
+          amber: '#f59e0b',
+          rose:  '#f43f5e',
+          emerald: '#10b981',
+          violet: '#8b5cf6',
+        }
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-in': 'slideIn 0.3s ease-out',
+        'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeIn:    { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        slideIn:   { from: { opacity: '0', transform: 'translateX(-12px)' }, to: { opacity: '1', transform: 'translateX(0)' } },
+        pulseSoft: { '0%,100%': { opacity: '1' }, '50%': { opacity: '.6' } },
+      }
+    }
+  }
+}
+</script>
+
+<link rel="stylesheet" href="tampilan.css" />
+</head>
+<body class="bg-surface-50 text-surface-800">
+<div id="app">
+
+<!-- ==================== ROOT APP ==================== -->
+<template id="app-template">
+  <!-- LOGIN SCREEN -->
+  <div v-if="!store.isLoggedIn()" class="min-h-screen flex items-center justify-center bg-surface-50 relative overflow-hidden">
+    <!-- Background decoration -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-brand-600/10 blur-3xl"></div>
+      <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-accent-violet/10 blur-3xl"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-500/5 blur-3xl"></div>
+    </div>
+
+    <div class="relative w-full max-w-md mx-auto p-6 animate-fade-in">
+      <!-- Logo -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-3 mb-4">
+          
+        </div>
+        <h1 class="font-display text-3xl font-bold text-surface-900 tracking-tight">TK-Qu Library</h1>
+        <p class="text-surface-400 mt-2 text-sm">Bacalah, dengan nama Tuhanmu yang Menciptakan</p>
+      </div>
+
+      <!-- Login card -->
+      <div class="bg-surface-100 border border-surface-300/50 rounded-3xl p-8 shadow-2xl">
+        <h2 class="font-display text-xl font-semibold mb-6">Masuk ke Perpustakaan</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Admin</label>
+            <input v-model="loginForm.email" type="text" placeholder="admin atau nama pengunjung"
+              class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-3 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors"
+              @keyup.enter="doLogin" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Password</label>
+            <input v-model="loginForm.password" type="password" placeholder="••••••••"
+              class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-3 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors"
+              @keyup.enter="doLogin" />
+          </div>
+          <p v-if="loginError" class="text-accent-rose text-sm flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {{ loginError }}
+          </p>
+          <button @click="doLogin" class="w-full bg-gradient-to-r from-orange-500 to-orange-700 text-white font-semibold py-3 rounded-xl transition-all hover:from-green-400 hover:to-green-600 shadow-lg shadow-brand-500/25 mt-2">
+            Masuk
+          </button>
+          <button @click="loginAsViewer" class="w-full border border-surface-300 text-surface-700 hover:bg-surface-200 font-semibold py-3 rounded-xl transition-colors">
+            Lihat koleksi buku
+          </button>
+        </div>
+       <!-- <p class="text-surface-500 text-xs text-center mt-6">Admin: admin / tkqu. Selain admin masuk sebagai pengunjung.</p>-->
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP LAYOUT -->
+  <div v-else class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside :class="['sidebar-transition bg-surface-100 border-r border-surface-200 flex flex-col z-40', sidebarOpen ? 'w-64' : 'w-16', 'fixed lg:relative h-full']">
+      <!-- Logo -->
+      <div class="p-4 border-b border-surface-200 flex items-center gap-3 min-h-[65px]">
+        <span v-show="sidebarOpen" class="font-display font-bold text-surface-900 text-lg tracking-tight whitespace-nowrap">TK-Qu Library</span>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 py-4 overflow-y-auto overflow-x-hidden">
+        <div v-show="sidebarOpen" class="px-4 mb-2">
+          <span class="text-[10px] font-bold text-surface-500 uppercase tracking-widest">Main</span>
+        </div>
+        <div v-for="item in visibleNavItems" :key="item.id">
+          <button @click="currentView = item.id; if(isMobile) sidebarOpen = false"
+            :class="['w-full flex items-center gap-3 px-4 py-2.5 mx-0 transition-all rounded-none relative group',
+              currentView === item.id
+                ? 'bg-brand-500/10 text-brand-400'
+                : 'text-surface-400 hover:text-surface-200 hover:bg-surface-100/50']">
+            <div v-if="currentView === item.id" class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-brand-400 rounded-r"></div>
+            <span class="flex-shrink-0 w-5 h-5" v-html="item.icon"></span>
+            <span v-show="sidebarOpen" class="whitespace-nowrap text-sm font-medium">{{ item.label }}</span>
+            <span v-if="item.badge && sidebarOpen" class="ml-auto bg-accent-rose/20 text-accent-rose border border-accent-rose/30 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ item.badge }}</span>
+          </button>
+        </div>
+
+        <div v-if="store.canEdit()" v-show="sidebarOpen" class="px-4 mt-6 mb-2">
+          <span class="text-[10px] font-bold text-surface-500 uppercase tracking-widest">Sistem</span>
+        </div>
+        <button v-if="store.canEdit()" @click="currentView = 'settings'"
+          :class="['w-full flex items-center gap-3 px-4 py-2.5 transition-all',
+            currentView === 'settings' ? 'bg-brand-500/10 text-brand-400' : 'text-surface-400 hover:text-surface-200 hover:bg-surface-100/50']">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span v-show="sidebarOpen" class="text-sm font-medium whitespace-nowrap">Settings</span>
+        </button>
+      </nav>
+
+      <!-- User + Toggle -->
+      <div class="border-t border-surface-200 p-3">
+<div v-show="sidebarOpen" class="flex items-center gap-3 mb-3">
+  <div class="min-w-0 flex-1">
+    <p class="text-sm font-semibold text-surface-900 truncate">{{ store.canEdit() ? 'Admin' : 'Pengunjung' }}</p>
+   
+  </div>
+  <button @click="doLogout" class="ml-auto text-surface-500 hover:text-accent-rose transition-colors flex-shrink-0" title="Logout">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+  </button>
+</div>
+        <button @click="sidebarOpen = !sidebarOpen" class="w-full flex items-center justify-center p-2 rounded-xl hover:bg-surface-100 text-surface-400 hover:text-surface-900 transition-colors">
+          <svg class="w-4 h-4 transition-transform" :class="sidebarOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile sidebar overlay -->
+    <div v-if="sidebarOpen && isMobile" @click="sidebarOpen = false" class="fixed inset-0 bg-black/60 z-30 lg:hidden"></div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden" :class="{'ml-16': !sidebarOpen && !isMobile, 'ml-64': sidebarOpen && !isMobile}">
+      <!-- Topbar -->
+      <header class="h-16 bg-surface-100/80 backdrop-blur border-b border-surface-200 flex items-center px-4 lg:px-6 gap-4 flex-shrink-0 sticky top-0 z-20">
+        <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-surface-100 text-surface-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div>
+          <h2 class="font-display font-semibold text-surface-900 text-lg leading-tight">{{ currentViewLabel }}</h2>
+          <p class="text-surface-500 text-xs hidden sm:block">{{ currentDate }}</p>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <!-- Search -->
+          <div class="hidden md:flex items-center gap-2 bg-surface-100 border border-surface-300 rounded-xl px-3 py-2">
+            <svg class="w-4 h-4 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input v-model="globalSearch" type="text" placeholder="Cari..." class="bg-transparent text-sm text-surface-900 placeholder-surface-500 focus:outline-none w-44" />
+          </div>
+          <button @click="doLogout" class="px-3 py-2 rounded-xl border border-surface-300 text-surface-600 hover:text-accent-rose hover:border-accent-rose/40 text-sm font-medium transition-colors">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <!-- View content -->
+      <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+        <transition name="view" mode="out-in">
+          <component :is="currentViewComponent" :key="currentView" :store="store" :search="globalSearch" @nav="currentView = $event" />
+        </transition>
+      </main>
+    </div>
+  </div>
+
+  <!-- Global notification toast -->
+  <div v-if="store.toast.show" class="fixed bottom-6 right-6 z-50 animate-fade-in">
+    <div :class="['flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl border max-w-sm',
+      store.toast.type === 'success' ? 'bg-surface-100 border-accent-emerald/30 text-accent-emerald' :
+      store.toast.type === 'error'   ? 'bg-surface-100 border-accent-rose/30 text-accent-rose' :
+      'bg-surface-100 border-brand-500/30 text-brand-400']">
+      <svg v-if="store.toast.type==='success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <svg v-else-if="store.toast.type==='error'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <svg v-else class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <p class="text-sm font-medium text-surface-900">{{ store.toast.message }}</p>
+    </div>
+  </div>
+</template>
+
+<!-- ==================== DASHBOARD VIEW ==================== -->
+<template id="view-dashboard">
+<div class="animate-fade-in space-y-6">
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-for="card in statCards" :key="card.label" class="card-hover bg-surface-100 border border-surface-200 rounded-2xl p-5 text-center">
+      <div class="flex justify-center mb-3">
+ 
+      </div>
+      <p class="font-display text-3xl font-bold text-slate-800">{{ card.value }}</p>
+      <p class="text-slate-500 text-sm mt-1">{{ card.label }}</p>
+      <div class="progress-bar mt-3">
+        <div class="progress-fill" :style="{width: card.pct+'%', background: card.color}"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid lg:grid-cols-2 gap-4">
+    <!-- Monthly chart -->
+    <div class="lg:col-span-2 bg-surface-100 border border-surface-200 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h3 class="font-display font-semibold text-surface-900">Bulanan</h3>
+          <p class="text-surface-500 text-xs mt-0.5">Peminjaman buku bulanan — {{ currentYear }}</p>
+        </div>
+        <div class="flex gap-2">
+          <button v-for="y in [currentYear-1, currentYear]" :key="y"
+            @click="chartYear = y"
+            :class="['text-xs px-3 py-1.5 rounded-lg font-medium transition-colors',
+              chartYear===y ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30' : 'text-surface-400 hover:text-surface-900']">
+            {{ y }}
+          </button>
+        </div>
+      </div>
+      <div class="chart-container h-52">
+        <canvas ref="monthlyChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom row -->
+  <div class="grid lg:grid-cols-2 gap-4">
+    <!-- Recent borrowings -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-semibold text-surface-900">Baru dipinjam</h3>
+        <button @click="$emit('nav','borrowing')" class="text-brand-400 text-xs hover:text-brand-300">View all →</button>
+      </div>
+      <div class="space-y-3">
+        <div v-for="b in recentBorrowings" :key="b.id" class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-100/50 transition-colors">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500/30 to-accent-violet/30 flex items-center justify-center text-surface-900 text-xs font-bold flex-shrink-0">
+            {{ b.memberName[0] }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-surface-900 text-sm font-medium truncate">{{ b.bookTitle }}</p>
+            <p class="text-surface-500 text-xs">by {{ b.memberName }}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span :class="['badge', b.status==='active'?'badge-blue':b.status==='terlambat'?'badge-rose':'badge-green']">
+              {{ b.status }}
+            </span>
+            <p class="text-surface-500 text-[11px] mt-1">{{ b.dueDate }}</p>
+          </div>
+        </div>
+        <div v-if="recentBorrowings.length === 0" class="text-surface-500 text-sm text-center py-4">Tidak ada peminjaman baru</div>
+      </div>
+    </div>
+
+    <!-- Overdue alerts -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-semibold text-surface-900">Peringatan Terlambat</h3>
+        <span class="badge badge-rose">{{ overdueBorrowings.length }} items</span>
+      </div>
+      <div class="space-y-3">
+        <div v-for="b in overdueBorrowings" :key="b.id" class="flex items-center gap-3 p-3 rounded-xl bg-accent-rose/5 border border-accent-rose/10">
+          <div class="w-2 h-2 rounded-full bg-accent-rose flex-shrink-0 animate-pulse-soft"></div>
+          <div class="min-w-0 flex-1">
+            <p class="text-surface-900 text-sm font-medium truncate">{{ b.bookTitle }}</p>
+            <p class="text-surface-400 text-xs">{{ b.memberName }}</p>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <p class="text-accent-rose text-xs font-semibold">Terlambat {{ b.daysOverdue }} hari </p>
+            <p class="text-surface-500 text-[11px]">Denda: Rp {{ b.fine.toLocaleString() }}</p>
+          </div>
+        </div>
+        <div v-if="overdueBorrowings.length === 0" class="text-center py-8">
+          <svg class="w-10 h-10 text-accent-emerald mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="text-surface-400 text-sm">Tidak ada buku yang terlambat dikembalikan!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ==================== BOOKS VIEW ==================== -->
+<template id="view-books">
+<div class="animate-fade-in space-y-5">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="flex-1 flex items-center gap-3 bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5">
+      <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input v-model="q" type="text" placeholder="Cari buku berdasarkan judul, penulis, barcode…" class="bg-transparent text-sm text-surface-900 placeholder-surface-500 focus:outline-none flex-1 min-w-0" />
+    </div>
+    <select v-model="pubFilter" class="bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5 text-sm text-surface-900 focus:outline-none focus:border-brand-500">
+      <option value="">Seluruh penerbit</option>
+      <option v-for="p in publishers" :key="p" :value="p">{{ p }}</option>
+    </select>
+    <select v-model="statusFilter" class="bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5 text-sm text-surface-900 focus:outline-none focus:border-brand-500">
+      <option value="">Semua Status</option>
+      <option value="available">Tersedia</option>
+      <option value="borrowed">Dipinjam</option>
+    </select>
+    <button v-if="store.canEdit()" @click="openBookForm()" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-brand-500/20">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Tambah buku
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-surface-100 border border-surface-200 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full data-table">
+        <thead>
+          <tr class="border-b border-surface-200">
+            <th v-for="col in (store.canEdit() ? ['Judul/Penulis','Penerbit','Barcode','Stok','Status','Actions'] : ['Judul/Penulis','Penerbit','Barcode','Stok','Status'])"
+              class="text-left px-5 py-3.5 text-[11px] font-bold text-surface-500 uppercase tracking-wider">{{ col }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="book in paginatedBooks" :key="book.id" class="border-b border-surface-200/50">
+            <td class="px-5 py-4">
+              <p class="text-surface-900 font-medium text-sm">{{ book.title }}</p>
+              <p class="text-surface-500 text-xs">{{ book.author }}</p>
+            </td>
+            <td class="px-5 py-4 text-surface-500 text-sm">
+              {{ book.publisher || '—' }}
+            </td>
+            <td class="px-5 py-4 font-mono text-surface-400 text-xs">{{ book.barcode }}</td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-surface-900 text-sm">{{ book.stock }}</span>
+                <span class="text-surface-500 text-xs">/ {{ book.totalStock }}</span>
+              </div>
+              <div class="progress-bar mt-1.5 w-20">
+                <div class="progress-fill bg-brand-500" :style="{width: (book.stock/book.totalStock*100)+'%'}"></div>
+              </div>
+            </td>
+            <td class="px-5 py-4">
+              <span :class="['badge', book.stock>0?'badge-green':'badge-rose']">
+                {{ book.stock > 0 ? 'Tersedia' : 'Dipinjam' }}
+              </span>
+            </td>
+            <td v-if="store.canEdit()" class="px-5 py-4">
+              <div class="flex items-center gap-2">
+                <button @click="openBookForm(book)" class="p-1.5 rounded-lg hover:bg-brand-500/10 text-surface-400 hover:text-brand-400 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button @click="deleteBook(book.id)" class="p-1.5 rounded-lg hover:bg-accent-rose/10 text-surface-400 hover:text-accent-rose transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr v-if="filteredBooks.length === 0">
+            <td :colspan="store.canEdit() ? 6 : 5" class="text-center py-12 text-surface-500">
+              <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              Buku tidak ditemukan
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div v-if="totalPages > 1" class="flex items-center justify-between px-5 py-3 border-t border-surface-200">
+      <p class="text-surface-500 text-xs">Showing {{ (page-1)*perPage+1 }}–{{ Math.min(page*perPage, filteredBooks.length) }} of {{ filteredBooks.length }}</p>
+      <div class="flex gap-1">
+        <button v-for="p in totalPages" :key="p" @click="page=p"
+          :class="['w-8 h-8 rounded-lg text-xs font-medium transition-colors',
+            page===p ? 'bg-brand-500 text-surface-900' : 'text-surface-400 hover:bg-surface-100']">{{ p }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Book Form Modal -->
+  <div v-if="showBookForm" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-surface-100 border border-surface-300 rounded-3xl w-full max-w-lg shadow-2xl animate-fade-in">
+      <div class="p-6 border-b border-surface-200 flex items-center justify-between">
+        <h3 class="font-display font-bold text-surface-900 text-lg">{{ editingBook ? 'Edit Buku' : 'Tambah Buku Baru' }}</h3>
+        <button @click="showBookForm=false" class="p-2 rounded-lg hover:bg-surface-100 text-surface-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Judul *</label>
+            <input v-model="bookForm.title" type="text" placeholder="Book title" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Penulis *</label>
+            <input v-model="bookForm.author" type="text" placeholder="Author name" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Penerbit</label>
+            <input v-model="bookForm.publisher" type="text" placeholder="Ibka Press" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" list="publist" />
+            <datalist id="publist"><option v-for="p in publishers" :key="p" :value="p"/></datalist>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Stok *</label>
+            <input v-model.number="bookForm.stock" type="number" min="1" placeholder="5" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Barcode *</label>
+            <input v-model="bookForm.barcode" type="text" placeholder="barcode" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+          </div>
+        </div>
+      </div>
+      <div class="p-6 border-t border-surface-200 flex gap-3 justify-end">
+        <button @click="showBookForm=false" class="px-5 py-2.5 rounded-xl border border-surface-300 text-surface-300 hover:bg-surface-100 transition-colors text-sm font-medium">Cancel</button>
+        <button @click="saveBook" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold transition-colors text-sm shadow-lg shadow-brand-500/20">{{ editingBook ? 'Simpan' : 'Tambah Buku' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ==================== MEMBERS VIEW ==================== -->
+<template id="view-members">
+<div class="animate-fade-in space-y-5">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="flex-1 flex items-center gap-3 bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5">
+      <svg class="w-4 h-4 text-surface-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input v-model="q" type="text" placeholder="Cari member berdasarkan nama, Status, atau ID member..." class="bg-transparent text-sm text-surface-900 placeholder-surface-500 focus:outline-none flex-1 min-w-0" />
+    </div>
+    <button v-if="store.canEdit()" @click="openMemberForm()" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-lg shadow-brand-500/20">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Tambah Member
+    </button>
+  </div>
+
+  <!-- Member cards grid -->
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-for="m in paginatedMembers" :key="m.id" class="card-hover bg-surface-100 border border-surface-200 rounded-2xl p-5 cursor-pointer" @click="viewMemberDetail(m)">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500/30 to-accent-violet/30 flex items-center justify-center text-surface-900 font-bold text-lg flex-shrink-0">
+            {{ m.name[0].toUpperCase() }}
+          </div>
+          <div>
+            <p class="font-semibold text-surface-900">{{ m.name }}</p>
+            <p class="text-surface-500 text-xs">{{ m.role }}</p>
+          </div>
+        </div>
+        <div v-if="store.canEdit()" class="flex gap-1.5" @click.stop>
+          <button @click="openMemberForm(m)" class="p-1.5 rounded-lg hover:bg-brand-500/10 text-surface-400 hover:text-brand-400 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </button>
+          <button @click="deleteMember(m.id)" class="p-1.5 rounded-lg hover:bg-accent-rose/10 text-surface-400 hover:text-accent-rose transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="space-y-2 text-xs text-surface-400">
+        <div class="flex items-center gap-2"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2h-3l-4 4z"/></svg> {{ m.memberCode }}</div>
+      </div>
+      <div class="mt-4 pt-4 border-t border-surface-200 flex items-center justify-between">
+        <div class="text-center">
+          <p class="text-[10px] text-surface-500">Sedang pinjam</p>
+          <p class="font-bold text-surface-900">{{ getMemberBorrowCount(m.id) }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-[10px] text-surface-500">Total pinjam</p>
+          <p class="font-bold text-surface-900">{{ getMemberTotalBorrowCount(m.id) }}</p>
+          
+        </div>
+        <div class="text-center">
+          <p class="text-[10px] text-surface-500">Terlambat mengembalikan</p>
+          <p class="font-bold" :class="getMemberOverdueCount(m.id) > 0 ? 'text-accent-rose' : 'text-accent-emerald'">{{ getMemberOverdueCount(m.id) }}</p>
+          
+        </div>
+      </div>
+    </div>
+    <div v-if="filteredMembers.length === 0" class="col-span-full text-center py-16">
+      <svg class="w-12 h-12 mx-auto mb-3 text-surface-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <p class="text-surface-500">Tidak ada anggota ditemukan</p>
+    </div>
+  </div>
+
+  <!-- Member Pagination -->
+  <div v-if="memberTotalPages > 1" class="flex items-center justify-between px-1 py-3">
+    <p class="text-surface-500 text-xs">
+      Menampilkan {{ (memberPage-1)*memberPerPage+1 }}–{{ Math.min(memberPage*memberPerPage, filteredMembers.length) }} dari {{ filteredMembers.length }} anggota
+    </p>
+    <div class="flex gap-1">
+      <button v-for="p in memberTotalPages" :key="p" @click="memberPage=p"
+        :class="['w-8 h-8 rounded-lg text-xs font-medium transition-colors',
+          memberPage===p ? 'bg-brand-500 text-surface-900' : 'text-surface-400 hover:bg-surface-100']">{{ p }}</button>
+    </div>
+  </div>
+
+  <!-- Member Form Modal -->
+  <div v-if="showMemberForm" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-surface-100 border border-surface-300 rounded-3xl w-full max-w-lg shadow-2xl animate-fade-in">
+      <div class="p-6 border-b border-surface-200 flex items-center justify-between">
+        <h3 class="font-display font-bold text-surface-900 text-lg">{{ editingMember ? 'Edit Anggota' : 'Tambah Anggota' }}</h3>
+        <button @click="showMemberForm=false" class="p-2 rounded-lg hover:bg-surface-100 text-surface-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Nama</label>
+          <input v-model="memberForm.name" type="text" placeholder="Nama" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Status *</label>
+            <select v-model="memberForm.role" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm focus:outline-none">
+              <option value="Murid">Murid</option>
+              <option value="Guru">Guru</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">ID Member *</label>
+            <input v-model="memberForm.memberCode" type="text" placeholder="MB001" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm" />
+          </div>
+        </div>
+      </div>
+      <div class="p-6 border-t border-surface-200 flex gap-3 justify-end">
+        <button @click="showMemberForm=false" class="px-5 py-2.5 rounded-xl border border-surface-300 text-surface-300 hover:bg-surface-100 transition-colors text-sm font-medium">Cancel</button>
+        <button @click="saveMember" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold transition-colors text-sm shadow-lg shadow-brand-500/20">{{ editingMember ? 'Simpan' : 'Tambah' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Member Detail Modal -->
+  <div v-if="selectedMember" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+    <div class="bg-surface-100 border border-surface-300 rounded-3xl w-full max-w-2xl shadow-2xl animate-fade-in overflow-y-auto max-h-[90vh]">
+      <div class="p-6 border-b border-surface-200 flex items-center justify-between sticky top-0 bg-surface-100">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500/30 to-accent-violet/30 flex items-center justify-center text-surface-900 font-bold text-xl">
+            {{ selectedMember.name[0].toUpperCase() }}
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-surface-900 text-xl">{{ selectedMember.name }}</h3>
+            <p class="text-surface-400 text-sm">{{ selectedMember.role }} · ID {{ selectedMember.memberCode }}</p>
+          </div>
+        </div>
+        <button @click="selectedMember=null" class="p-2 rounded-lg hover:bg-surface-100 text-surface-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="p-6 space-y-6">
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-surface-100/50 rounded-xl p-4 text-center">
+            <p class="font-display text-2xl font-bold text-surface-900">{{ getMemberBorrowCount(selectedMember.id) }}</p>
+            <p class="text-surface-500 text-xs mt-1">Peminjaman Aktif</p>
+          </div>
+          <div class="bg-surface-100/50 rounded-xl p-4 text-center">
+            <p class="font-display text-2xl font-bold text-accent-emerald">{{ getMemberHistoryCount(selectedMember.id) }}</p>
+            <p class="text-surface-500 text-xs mt-1">Dikembalikan</p>
+          </div>
+          <div class="bg-surface-100/50 rounded-xl p-4 text-center">
+            <p class="font-display text-2xl font-bold text-accent-rose">{{ getMemberOverdueCount(selectedMember.id) }}</p>
+            <p class="text-surface-500 text-xs mt-1">Terlambat</p>
+          </div>
+        </div>
+        <!-- Current loans -->
+        <div>
+          <h4 class="font-display font-semibold text-surface-900 mb-3">Sedang Dipinjam</h4>
+          <div class="space-y-2">
+            <div v-for="b in getMemberActiveBorrowings(selectedMember.id)" :key="b.id" class="flex items-center justify-between p-3 bg-surface-100/50 rounded-xl">
+              <div>
+                <p class="text-surface-900 text-sm font-medium">{{ b.bookTitle }}</p>
+                <p class="text-surface-500 text-xs">Due: {{ b.dueDate }}</p>
+              </div>
+              <span :class="['badge', b.status==='terlambat'?'badge-rose':'badge-blue']">{{ b.status }}</span>
+            </div>
+            <p v-if="getMemberActiveBorrowings(selectedMember.id).length===0" class="text-surface-500 text-sm text-center py-4">No active loans</p>
+          </div>
+        </div>
+        <!-- History -->
+        <div>
+          <h4 class="font-display font-semibold text-surface-900 mb-3">Riwayat Peminjaman</h4>
+          <div class="space-y-2">
+            <div v-for="b in getMemberReturnedBorrowings(selectedMember.id).slice(0,5)" :key="b.id" class="flex items-center justify-between p-3 bg-surface-100/50 rounded-xl">
+              <div>
+                <p class="text-surface-900 text-sm font-medium">{{ b.bookTitle }}</p>
+                <p class="text-surface-500 text-xs">Dikembalikan: {{ b.returnDate }}</p>
+              </div>
+              <span class="badge badge-green">Dikembalikan</span>
+            </div>
+            <p v-if="getMemberReturnedBorrowings(selectedMember.id).length===0" class="text-surface-500 text-sm text-center py-4">Ndak ada riwayat</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ==================== BORROWING VIEW ==================== -->
+<template id="view-borrowing">
+<div class="animate-fade-in space-y-5">
+  <!-- Tabs -->
+  <div class="flex gap-2 bg-surface-100 border border-surface-200 rounded-2xl p-1 w-fit">
+    <button v-for="tab in borrowingTabs" :key="tab"
+      @click="activeTab=tab"
+      :class="['px-5 py-2 rounded-xl text-sm font-semibold transition-all',
+        activeTab===tab ? 'bg-brand-500 text-surface-900 shadow-lg shadow-brand-500/20' : 'text-surface-400 hover:text-surface-900']">
+      {{ tab }}
+      <span v-if="tab==='Active'" class="ml-2 bg-brand-500/20 text-brand-400 text-xs px-1.5 py-0.5 rounded-full">{{ activeBorrowings.length }}</span>
+    </button>
+  </div>
+
+  <!-- BORROW TAB -->
+  <div v-if="store.canEdit() && activeTab==='Peminjaman'" class="grid lg:grid-cols-2 gap-5">
+    <!-- Barcode scanner USB -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl p-5">
+      <h3 class="font-display font-semibold text-surface-900 mb-1">Scan Barcode</h3>
+      <p class="text-surface-500 text-xs mb-4">Arahkan scanner ke barcode buku, atau ketik manual lalu tekan Enter</p>
+
+      <!-- Input utama scanner -->
+      <div class="relative">
+        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+          <svg class="w-5 h-5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3a2 2 0 00-2 2v10a2 2 0 002 2h4a2 2 0 002-2V10a2 2 0 00-2-2zm12 0h-2a2 2 0 00-2 2v10a2 2 0 002 2h4a2 2 0 002-2V10a2 2 0 00-2-2z"/>
+          </svg>
+        </div>
+        <input
+          ref="barcodeInput"
+          v-model="manualBarcode"
+          type="text"
+          placeholder="Scan atau ketik barcode di sini..."
+          class="form-input w-full bg-white border-2 border-brand-400 rounded-xl pl-10 pr-4 py-3 text-surface-900 placeholder-surface-400 focus:border-brand-500 transition-colors text-sm font-mono"
+          @keyup.enter="handleBarcodeScan"
+          @input="borrowForm.barcode = manualBarcode; syncDetectedBook()"
+          autofocus
+        />
+      </div>
+      <p class="text-surface-400 text-xs mt-2 text-center">
+        Tulis manual kalau scanner tidak berfungsi
+      </p>
+
+      <!-- Detected book -->
+      <div v-if="detectedBook" class="mt-4 p-4 rounded-xl bg-accent-emerald/5 border border-accent-emerald/20">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-accent-emerald/10 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-accent-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-surface-900">{{ detectedBook.title }}</p>
+            <p class="text-surface-400 text-xs">{{ detectedBook.author }} · {{ detectedBook.category }}</p>
+            <p class="text-surface-400 text-xs">{{ detectedBook.publisher }}</p>
+            <p class="text-accent-emerald text-xs mt-1 font-semibold">✓ Stok tersedia: {{ detectedBook.stock }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="manualBarcode" class="mt-4 p-3 rounded-xl bg-accent-rose/5 border border-accent-rose/20 text-accent-rose text-xs text-center">
+        Buku tidak ditemukan untuk barcode ini
+      </div>
+    </div>
+
+    <!-- Borrow form -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl p-5">
+      <h3 class="font-display font-semibold text-surface-900 mb-4">Detail Peminjaman</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Scan ID Member *</label>
+          <input
+            ref="memberBarcodeInput"
+            v-model="memberBarcode"
+            type="text"
+            placeholder="Scan barcode/ID member..."
+            class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm font-mono"
+            @input="syncDetectedMember"
+            @keyup.enter="lookupMemberBarcode"
+          />
+          <div v-if="detectedMember" class="mt-3 p-3 rounded-xl bg-accent-emerald/5 border border-accent-emerald/20">
+            <p class="text-surface-900 text-sm font-semibold">{{ detectedMember.name }}</p>
+            <p class="text-surface-500 text-xs">{{ detectedMember.role }} · ID {{ detectedMember.memberCode }}</p>
+          </div>
+          <div v-else-if="memberBarcode" class="mt-3 p-3 rounded-xl bg-accent-rose/5 border border-accent-rose/20 text-accent-rose text-xs text-center">
+            Member tidak ditemukan untuk ID ini
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Barcode Buku *</label>
+          <input
+  v-model="borrowForm.barcode" 
+  type="text" 
+  placeholder="Scan barcode buku di sini..." 
+  class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm" 
+  @input="syncDetectedBook"
+  @keyup.enter="handleBarcodeScan" 
+/>
+</div>
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Tanggal Pengembalian *</label>
+          <input v-model="borrowForm.dueDate" type="date" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm focus:outline-none" />
+        </div>
+        <button @click="submitBorrow" :disabled="!borrowForm.memberId || !borrowForm.barcode || !borrowForm.dueDate"
+          class="w-full py-3 rounded-xl font-semibold transition-all shadow-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-surface-900 shadow-brand-500/20">
+          Konfirmasi Peminjaman
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RETURN TAB -->
+  <div v-if="store.canEdit() && activeTab==='Pengembalian'" class="bg-surface-100 border border-surface-200 rounded-2xl p-5">
+    <h3 class="font-display font-semibold text-surface-900 mb-5">Kembalikan Buku</h3>
+    <div class="grid lg:grid-cols-2 gap-5">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Pilih peminjaman</label>
+          <select v-model="returnBorrowId" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm focus:outline-none">
+            <option value="">Pilih peminjaman</option>
+            <option v-for="b in activeBorrowings" :key="b.id" :value="b.id">{{ b.bookTitle }} — {{ b.memberName }}</option>
+          </select>
+        </div>
+        <button @click="processReturn" :disabled="!returnBorrowId"
+          class="w-full py-3 rounded-xl font-semibold transition-all text-sm disabled:opacity-40 bg-accent-emerald/80 hover:bg-accent-emerald text-surface-900">
+          Proses Pengembalian
+        </button>
+      </div>
+      <div v-if="returnBorrowId">
+        <div v-for="b in activeBorrowings.filter(x=>x.id===returnBorrowId)" :key="b.id"
+          class="p-5 rounded-xl bg-surface-100/50 border border-surface-300 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="font-semibold text-surface-900">{{ b.bookTitle }}</p>
+            <span :class="['badge', b.status==='terlambat'?'badge-rose':'badge-blue']">{{ b.status }}</span>
+          </div>
+          <p class="text-surface-400 text-sm">Member: {{ b.memberName }}</p>
+          <p class="text-surface-400 text-sm">Jatuh Tempo: {{ b.dueDate }}</p>
+          <div v-if="b.status==='terlambat'" class="pt-3 border-t border-surface-300">
+            <p class="text-accent-rose font-semibold text-sm">⚠ Terlambat {{ b.daysOverdue }} hari</p>
+            <p class="text-accent-amber text-sm mt-1">Denda: Rp {{ b.fine.toLocaleString() }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVE TAB -->
+  <div v-if="activeTab==='Sedang pinjam'" class="bg-surface-100 border border-surface-200 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full data-table">
+        <thead>
+          <tr class="border-b border-surface-200">
+            <th v-for="col in ['Anggota','Buku','Tgl Pinjam','Tgl Kembali','Status','Denda']" :key="col"
+              class="text-left px-5 py-3.5 text-[11px] font-bold text-surface-500 uppercase tracking-wider">{{ col }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="b in activeBorrowings" :key="b.id" class="border-b border-surface-200/50">
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-500/20 to-accent-violet/20 flex items-center justify-center text-surface-900 text-xs font-bold">{{ b.memberName[0] }}</div>
+                <span class="text-surface-900 text-sm">{{ b.memberName }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-surface-300 text-sm">{{ b.bookTitle }}</td>
+            <td class="px-5 py-4 text-surface-400 text-sm">{{ b.borrowDate }}</td>
+            <td class="px-5 py-4 text-surface-400 text-sm">{{ b.dueDate }}</td>
+            <td class="px-5 py-4"><span :class="['badge', b.status==='terlambat'?'badge-rose':'badge-blue']">{{ b.status }}</span></td>
+            <td class="px-5 py-4 text-sm" :class="b.fine>0?'text-accent-rose font-semibold':'text-surface-500'">
+              {{ b.fine > 0 ? 'Rp '+b.fine.toLocaleString() : '—' }}
+            </td>
+          </tr>
+          <tr v-if="activeBorrowings.length===0"><td colspan="6" class="text-center py-12 text-surface-500">Tidak ada peminjaman aktif</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ==================== HISTORY VIEW ==================== -->
+<template id="view-history">
+<div class="animate-fade-in space-y-5">
+  <!-- Filters -->
+  <div class="flex flex-wrap gap-3">
+    <input v-model="q" type="text" placeholder="Search by member or book…"
+      class="form-input flex-1 min-w-48 bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5 text-surface-900 placeholder-surface-500 focus:border-brand-500 transition-colors text-sm focus:outline-none" />
+
+    <select v-model="filterMonth" class="bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5 text-sm text-surface-900 focus:outline-none">
+      <option value="">Pilih bulan</option>
+      <option v-for="(mn,i) in months" :key="i" :value="i+1">{{ mn }}</option>
+    </select>
+    <select v-model="filterYear" class="bg-surface-100 border border-surface-200 rounded-xl px-4 py-2.5 text-sm text-surface-900 focus:outline-none">
+      <option value="">Pilih tahun</option>
+      <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+    </select>
+    <button @click="exportCSV" class="flex items-center gap-2 px-4 py-2.5 bg-surface-100 border border-surface-300 text-surface-300 hover:text-surface-900 rounded-xl transition-colors text-sm font-medium">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      Export CSV
+    </button>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div v-for="s in summaryStats" :key="s.label" class="bg-surface-100 border border-surface-200 rounded-xl p-4">
+      <p class="font-display text-2xl font-bold" :class="s.color">{{ s.value }}</p>
+      <p class="text-surface-500 text-xs mt-1">{{ s.label }}</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-surface-100 border border-surface-200 rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full data-table">
+        <thead>
+          <tr class="border-b border-surface-200">
+            <th v-for="col in ['#','Member','Buku','Tanggal Pinjam','Tanggal Kembali','Status','Denda']" :key="col"
+              class="text-left px-5 py-3.5 text-[11px] font-bold text-surface-500 uppercase tracking-wider">{{ col }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(b,i) in filteredHistory" :key="b.id" class="border-b border-surface-200/50">
+            <td class="px-5 py-4 text-surface-400 text-xs">{{ i+1 }}</td>
+            <td class="px-5 py-4">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-500/20 to-accent-violet/20 flex items-center justify-center text-surface-900 text-xs font-bold flex-shrink-0">{{ b.memberName[0] }}</div>
+                <span class="text-surface-900 text-sm">{{ b.memberName }}</span>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-surface-300 text-sm">{{ b.bookTitle }}</td>
+            <td class="px-5 py-4 text-surface-400 text-sm">{{ b.borrowDate }}</td>
+            <td class="px-5 py-4 text-surface-400 text-sm">{{ b.dueDate }}</td>
+            <td class="px-5 py-4 text-surface-400 text-sm">{{ b.returnDate || '—' }}</td>
+            <td class="px-5 py-4">
+              <span :class="['badge', b.status==='returned'?'badge-green':b.status==='overdue'?'badge-rose':'badge-blue']">{{ b.status }}</span>
+            </td>
+            <td class="px-5 py-4 text-sm" :class="b.fine>0?'text-accent-rose font-semibold':'text-surface-500'">
+              {{ b.fine > 0 ? 'Rp '+b.fine.toLocaleString() : '—' }}
+            </td>
+          </tr>
+          <tr v-if="filteredHistory.length===0"><td colspan="8" class="text-center py-12 text-surface-500">Tidak ada catatan yang ditemukan</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="px-5 py-3 border-t border-surface-200">
+      <p class="text-surface-500 text-xs">{{ filteredHistory.length }} records</p>
+    </div>
+  </div>
+</div>
+</template>
+
+<!-- ==================== SETTINGS VIEW ==================== -->
+<template id="view-settings">
+<div class="animate-fade-in max-w-2xl space-y-5">
+  <div class="bg-surface-100 border border-surface-200 rounded-2xl p-6">
+    <h3 class="font-display font-semibold text-surface-900 mb-5">Pengaturan Perpustakaan</h3>
+    <div class="space-y-4">
+  <!--    <div>
+        <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Nama Perpustakaan</label>
+        <input v-model="store.settings.libraryName" type="text" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm" />
+      </div>-->
+      <div>
+        <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Denda Harian (Rp)</label>
+        <input v-model.number="store.settings.finePerDay" type="number" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Durasi Peminjaman Default (Hari)</label>
+        <input v-model.number="store.settings.defaultLoanDays" type="number" class="form-input w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-2.5 text-surface-900 focus:border-brand-500 transition-colors text-sm" />
+      </div>
+    </div>
+    <button @click="store.saveSettings()" class="mt-5 px-5 py-2.5 bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-brand-500/20">Simpan Pengaturan</button>
+  </div>
+
+  <div class="bg-surface-100 border border-surface-200 rounded-2xl p-6">
+    <h3 class="font-display font-semibold text-surface-900 mb-2">TK-Qur'an Ibnu Katsir</h3>
+    <p class="text-surface-500 text-sm">Tagline</p>
+    <p class="text-surface-400 text-xs mt-2">Kasih info mase</p>
+  </div>
+</div>
+</template>
+
+<!-- ==================== IMPORT VIEW ==================== -->
+<template id="view-import">
+<div class="animate-fade-in space-y-6 max-w-5xl">
+  <!-- Header -->
+  <div>
+    <h2 class="font-display text-xl font-semibold text-surface-900">Import Data</h2>
+    <p class="text-surface-500 text-sm mt-1">Upload data buku dan anggota dari file CSV</p>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <!-- Import Buku -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-surface-200">
+        <h3 class="font-display font-semibold text-surface-900">Import Data Buku</h3>
+        <p class="text-surface-500 text-xs mt-1">Format CSV: <span class="text-brand-400 font-mono">judul,penulis,penerbit,stok,barcode</span></p>
+      </div>
+      <div class="p-6 space-y-4">
+        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-surface-300 hover:border-brand-500 rounded-xl cursor-pointer transition-colors bg-surface-100/40 hover:bg-brand-500/5">
+          <svg class="w-8 h-8 text-surface-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span class="text-surface-400 text-sm">Klik untuk pilih file CSV buku</span>
+          <input type="file" accept=".csv" class="hidden" @change="handleBookCSV($event)" />
+        </label>
+
+        <div v-if="bookPreview.length > 0">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-surface-400 text-xs">{{ bookPreview.length }} buku akan diimport</span>
+            <button @click="bookPreview = []" class="text-surface-500 hover:text-accent-rose text-xs transition-colors">Batal</button>
+          </div>
+          <div class="max-h-44 overflow-y-auto rounded-xl border border-surface-300">
+            <table class="w-full text-xs">
+              <thead class="bg-surface-100 sticky top-0">
+                <tr>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Judul</th>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Penulis</th>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Penerbit</th>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Stok</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-800">
+                <tr v-for="b in bookPreview" :key="b.barcode" class="hover:bg-surface-100/50 transition-colors">
+                  <td class="px-3 py-2 text-surface-900">{{ b.title }}</td>
+                  <td class="px-3 py-2 text-surface-400">{{ b.author }}</td>
+                  <td class="px-3 py-2 text-surface-400">{{ b.publisher }}</td>
+                  <td class="px-3 py-2 text-surface-400">{{ b.stock }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button @click="importBooks()"
+            class="mt-3 w-full bg-brand-500 hover:bg-brand-400 text-surface-900 font-semibold py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-brand-500/20">
+            Import {{ bookPreview.length }} Buku
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Anggota -->
+    <div class="bg-surface-100 border border-surface-200 rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-surface-200">
+        <h3 class="font-display font-semibold text-surface-900">Import Data Anggota</h3>
+        <p class="text-surface-500 text-xs mt-1">Format CSV: <span class="text-accent-emerald font-mono">nama,Status,id_member</span></p>
+      </div>
+      <div class="p-6 space-y-4">
+        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-surface-300 hover:border-accent-emerald rounded-xl cursor-pointer transition-colors bg-surface-100/40 hover:bg-accent-emerald/5">
+          <svg class="w-8 h-8 text-surface-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span class="text-surface-400 text-sm">Klik untuk pilih file CSV anggota</span>
+          <input type="file" accept=".csv" class="hidden" @change="handleMemberCSV($event)" />
+        </label>
+
+        <div v-if="memberPreview.length > 0">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-surface-400 text-xs">{{ memberPreview.length }} anggota akan diimport</span>
+            <button @click="memberPreview = []" class="text-surface-500 hover:text-accent-rose text-xs transition-colors">Batal</button>
+          </div>
+          <div class="max-h-44 overflow-y-auto rounded-xl border border-surface-300">
+            <table class="w-full text-xs">
+              <thead class="bg-surface-100 sticky top-0">
+                <tr>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Nama</th>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">Status</th>
+                  <th class="px-3 py-2 text-left text-surface-400 font-semibold">ID Member</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-800">
+                <tr v-for="(m, i) in memberPreview" :key="m.name + i" class="hover:bg-surface-100/50 transition-colors">
+                  <td class="px-3 py-2 text-surface-900">{{ m.name }}</td>
+                  <td class="px-3 py-2 text-surface-400">{{ m.role }}</td>
+                  <td class="px-3 py-2 text-surface-400">{{ m.memberCode }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button @click="importMembers()"
+            class="mt-3 w-full bg-accent-emerald/80 hover:bg-accent-emerald text-surface-900 font-semibold py-2.5 rounded-xl transition-colors text-sm">
+            Import {{ memberPreview.length }} Anggota
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
