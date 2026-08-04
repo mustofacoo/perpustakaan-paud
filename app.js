@@ -437,6 +437,8 @@ const BorrowingView = {
     const memberBarcode = ref('');
     const detectedMember = ref(null);
     const returnBorrowId = ref('');
+    const returnSearchQuery = ref('');
+    const showReturnSuggestions = ref(false);
     const barcodeInput = ref(null);
     const memberBarcodeInput = ref(null);
 
@@ -449,6 +451,14 @@ const BorrowingView = {
     borrowForm.dueDate = defaultDueDate();
 
     const activeBorrowings = computed(() => props.store.activeBorrowings.value);
+    const filteredActiveBorrowings = computed(() => {
+    const q = returnSearchQuery.value.trim().toLowerCase();
+    if (!q) return activeBorrowings.value;
+    return activeBorrowings.value.filter(b =>
+      (b.memberName || '').toLowerCase().includes(q) ||
+      (b.bookTitle  || '').toLowerCase().includes(q)
+    );
+});
     const borrowingTabs = computed(() => props.store.isAdmin.value ? ['Peminjaman','Pengembalian','Sedang pinjam'] : ['Sedang pinjam']);
 
     // Cari buku dari barcode
@@ -541,6 +551,14 @@ const BorrowingView = {
       if (!returnBorrowId.value) return;
       props.store.returnBook(parseInt(returnBorrowId.value));
       returnBorrowId.value = '';
+      returnSearchQuery.value = '';
+      showReturnSuggestions.value = false;
+    }
+
+    function selectReturnBorrowing(b) {
+      returnBorrowId.value = b.id;
+      returnSearchQuery.value = `${b.memberName} — ${b.bookTitle}`;
+      showReturnSuggestions.value = false;
     }
 
     // Fokus otomatis ke input barcode saat halaman dibuka
@@ -555,9 +573,10 @@ const BorrowingView = {
     return {
       activeTab, borrowingTabs, manualBarcode, detectedBook, borrowForm,
       memberBarcode, detectedMember,
-      returnBorrowId, activeBorrowings, barcodeInput, memberBarcodeInput,
+      returnBorrowId, activeBorrowings, barcodeInput, memberBarcodeInput, filteredActiveBorrowings, returnSearchQuery,
+      showReturnSuggestions,
       lookupBarcode, lookupMemberBarcode, syncDetectedBook, syncDetectedMember, handleBarcodeScan, handleMemberBarcodeScan,
-      submitBorrow, processReturn
+      submitBorrow, processReturn, selectReturnBorrowing
     };
   },
   template: document.getElementById('view-borrowing')?.innerHTML || ''
