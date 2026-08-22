@@ -130,9 +130,22 @@ function createStore() {
 
   async function borrow(memberId, bookId, dueDate) {
     if(!requireAdmin()) return false;
-    const book = books.value.find(b => b.id === bookId);
-    if(!book || book.stock <= 0) { showToast('Buku tidak tersedia!', 'error'); return false; }
-    try {
+    const existingBorrow = borrowings.value.find(
+    b => b.memberId === memberId && b.status !== 'dikembalikan'
+  );
+  if(existingBorrow) {
+    const member = members.value.find(m => m.id === memberId);
+    const book   = books.value.find(bk => bk.id === existingBorrow.bookId);
+    showToast(
+      `❌ ${member?.name || 'Member'} sedang meminjam "${book?.title || 'buku lain'}". Kembalikan dulu sebelum meminjam buku baru.`,
+      'error'
+    );
+    return false;
+  }
+
+  const book = books.value.find(b => b.id === bookId);
+  if(!book || book.stock <= 0) { showToast('Buku tidak tersedia!', 'error'); return false; }
+  try {
       const nb = await DB.insertBorrowing({ memberId, bookId, borrowDate: today(), dueDate });
       borrowings.value.push(nb);
       book.stock--;
@@ -484,6 +497,16 @@ const BorrowingView = {
         detectedMember.value = member;
         borrowForm.memberId = member.id;
         memberBarcode.value = member.memberCode;
+            const activeLoan = props.store.borrowings.value.find(
+      b => b.memberId === member.id && b.status !== 'dikembalikan'
+    );
+    if (activeLoan) {
+      const borrowedBook = props.store.books.value.find(bk => bk.id === activeLoan.bookId);
+      props.store.showToast(
+        `⚠️ ${member.name} masih meminjam "${borrowedBook?.title || 'buku'}". Kembalikan dulu, ya :).`,
+        'error'
+      );
+    }
       } else {
         props.store.showToast('Member tidak ditemukan: ' + code, 'error');
         detectedMember.value = null;
