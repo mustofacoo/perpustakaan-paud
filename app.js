@@ -533,29 +533,29 @@ const BorrowingView = {
     }
 
     // Dipanggil saat scanner mengirim Enter setelah scan
-    function handleBarcodeScan() {
+    async function handleBarcodeScan() {
       lookupBarcode();
       // Jika buku sudah ketemu dan member sudah dipilih, langsung proses
       if (detectedBook.value && borrowForm.memberId) {
-        submitBorrow();
+        await submitBorrow();
       } else if (detectedBook.value) {
         nextTick(() => { if (memberBarcodeInput.value) memberBarcodeInput.value.focus(); });
       }
     }
 
-    function handleMemberBarcodeScan() {
+    async function handleMemberBarcodeScan() {
       lookupMemberBarcode();
       if (detectedMember.value && detectedBook.value && borrowForm.barcode) {
-        submitBorrow();
+        await submitBorrow();
       }
     }
 
-    function submitBorrow() {
+    async function submitBorrow() {
       if (!props.store.isAdmin.value) { props.store.showToast('Hanya admin yang boleh mengisi peminjaman.', 'error'); return; }
       const book = props.store.findBookByBarcode(borrowForm.barcode);
       if (!book) { props.store.showToast('Buku tidak ditemukan!', 'error'); return; }
       if (book.stock <= 0) { props.store.showToast('Stok buku habis!', 'error'); return; }
-      const ok = props.store.borrow(parseInt(borrowForm.memberId), book.id, borrowForm.dueDate);
+      const ok = await props.store.borrow(parseInt(borrowForm.memberId), book.id, borrowForm.dueDate);
       if (ok) {
         borrowForm.memberId = '';
         borrowForm.barcode = '';
